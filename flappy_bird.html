@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Flappy Bird</title>
+    <style>
+        canvas {
+            border: 1px solid #000;
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+    <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}">
+</head>
+<body>
+<canvas id="gameCanvas" width="400" height="400"></canvas>
+</body>
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    // 새 객체 추가
+    const bird =
+        {
+            x: 50,
+            y: canvas.height / 2,
+            width: 20,
+            height: 20,
+            velocity: 0,
+            gravity: 0.2,
+            jumpStrength: -5
+        };
+
+    let pipes = [];
+    let score = 0;
+    let gameSpeed = 2;
+
+    //파이프 생성
+    function createPipe() {
+        const spaceBetweenPipes = 900;
+        const minHeight = 50;
+        const maxHeight = canvas.height - spaceBetweenPipes - minHeight;
+        const topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
+        const bottomHeight = canvas.height - spaceBetweenPipes - topHeight;
+        const pipe = {
+            x: canvas.width,
+            topHeight: topHeight,
+            bottomY: topHeight + spaceBetweenPipes,
+            bottomHeight: bottomHeight,
+            width: 40,
+            passed: false
+        };
+        pipes.push(pipe);
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // 새 그리기
+        ctx.fillStyle = 'red';
+        ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
+        // 파이프 그리기
+        ctx.fillStyle = 'green';
+        for (let i = 0; i < pipes.length; i++) {
+            const pipe = pipes[i];
+            ctx.fillRect(pipe.x, 0, pipe.width, pipe.topHeight);
+            ctx.fillRect(pipe.x, pipe.bottomY, pipe.width, pipe.bottomHeight);
+        }
+        // 점수 표시
+        ctx.fillStyle = 'black';
+        ctx.font = '20px Arial';
+        ctx.fillText('Score: ' + score, 10, 25);
+    }
+
+    function update() {
+        bird.velocity += bird.gravity;
+        bird.y += bird.velocity;
+        // 파이프 이동
+        for (let i = 0; i < pipes.length; i++) {
+            const pipe = pipes[i];
+
+            pipe.x -= gameSpeed;
+            // 파이프와의 충돌 체크
+            if (bird.x < pipe.x + pipe.width &&
+                bird.x + bird.width > pipe.x &&
+                (bird.y < pipe.topHeight || bird.y + bird.height > pipe.bottomY)) {
+                gameOver();
+            }
+            if (pipe.x + pipe.width < bird.x && !pipe.passed) {
+                pipe.passed = true;
+
+                score++;
+            }
+            if (pipe.x + pipe.width < 0) {
+                pipes.splice(i, 1);
+                i--;
+            }
+        }
+        // 바닥 충돌 체크
+        if (bird.y + bird.height > canvas.height) {
+            gameOver();
+        }
+    }
+
+    function mainLoop() {
+        update();
+        draw();
+        if (frameCount % 100 === 0) {
+            createPipe();
+        }
+        frameCount++;
+        requestAnimationFrame(mainLoop);
+    }
+
+    function gameOver() {
+        alert('You died. score: ' + score);
+        resetGame();
+    }
+
+    function resetGame() {
+        bird.y = canvas.height / 2;
+        bird.velocity = 0;
+        pipes = [];
+        score = 0;
+        gameSpeed = 2;
+    }
+
+    function handleKeyPress(event) {
+        if (event.code === 'Space') {
+            bird.velocity = bird.jumpStrength;
+        }
+    }
+
+    document.addEventListener('keydown', handleKeyPress);
+    let frameCount = 0;
+    mainLoop();
+</script>
+</html>
